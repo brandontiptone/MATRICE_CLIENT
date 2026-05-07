@@ -56,9 +56,7 @@ tab1, tab2 = st.tabs(["📋 Coller les données", "➕ Ajouter manuellement"])
 
 with tab1:
     st.markdown("Colle tes données — chaque ligne = un client. Format : `NOM [tab ou espace] PV [tab ou espace] DÉPARTEMENTS` (séparateurs `/` `,` ou espace)")
-    texte = st.text_area("Colle ici", height=200, placeholder="ELIE PV 1	PV	29,22,35,56,44
-TOM PV 1	PV	13/83/06
-...")
+    texte = st.text_area("Colle ici", height=200, placeholder="ELIE PV 1  PV  29,22,35,56,44\nTOM PV 1  PV  13/83/06\n...")
 
     col_imp, col_rem = st.columns([2, 2])
     with col_imp:
