@@ -50,28 +50,96 @@ st.divider()
 # AJOUTER UN CLIENT
 # ─────────────────────────────────────────────
 
-st.header("① Ajouter un client")
+st.header("① Charger les clients")
 
-col1, col2, col3 = st.columns([2, 4, 1])
-with col1:
-    nouveau_nom = st.text_input("Nom du client", placeholder="Ex : Client_XX")
-with col2:
-    nouveaux_deps = st.text_input("Départements (séparés par des virgules)", placeholder="Ex : 75, 92, 93, 94")
-with col3:
-    st.write("")
-    st.write("")
-    ajouter = st.button("➕ Ajouter")
+tab1, tab2 = st.tabs(["📋 Coller les données", "➕ Ajouter manuellement"])
 
-if ajouter:
-    if not nouveau_nom.strip() or not nouveaux_deps.strip():
-        st.error("❌ Remplis le nom et les départements.")
-    elif nouveau_nom.strip() in [c["nom"] for c in st.session_state.clients]:
-        st.error(f"❌ '{nouveau_nom}' existe déjà.")
-    else:
-        prefixes = [d.strip().zfill(2) for d in nouveaux_deps.split(",") if d.strip()]
-        st.session_state.clients.append({"nom": nouveau_nom.strip(), "prefixes": prefixes})
-        st.success(f"✅ {nouveau_nom} ajouté avec {len(prefixes)} département(s).")
-        st.rerun()
+with tab1:
+    st.markdown("Colle tes données — chaque ligne = un client. Format : `NOM [tab ou espace] PV [tab ou espace] DÉPARTEMENTS` (séparateurs `/` `,` ou espace)")
+    texte = st.text_area("Colle ici", height=200, placeholder="ELIE PV 1	PV	29,22,35,56,44
+TOM PV 1	PV	13/83/06
+...")
+
+    col_imp, col_rem = st.columns([2, 2])
+    with col_imp:
+        if st.button("📥 Importer", use_container_width=True):
+            if not texte.strip():
+                st.error("❌ Aucune donnée à importer.")
+            else:
+                import re
+                nouveaux = []
+                erreurs = []
+                for line in texte.strip().splitlines():
+                    line = line.strip()
+                    if not line or line.startswith(">"):
+                        continue
+                    # Découper par tabulation ou multiple espaces
+                    parts = re.split(r"	+", line)
+                    if len(parts) < 3:
+                        parts = re.split(r"\s{2,}", line)
+                    if len(parts) < 2:
+                        erreurs.append(f"Ligne ignorée : {line}")
+                        continue
+                    # Détecter si colonne PV présente
+                    if len(parts) >= 3 and parts[1].strip().upper() == "PV":
+                        nom = parts[0].strip()
+                        deps_str = parts[2].strip()
+                    elif len(parts) == 2:
+                        nom = parts[0].strip()
+                        deps_str = parts[1].strip()
+                    else:
+                        nom = parts[0].strip()
+                        deps_str = parts[-1].strip()
+
+                    # Parser les départements (séparateurs / , espace)
+                    deps_raw = re.split(r"[/,\s]+", deps_str)
+                    prefixes = [d.strip().zfill(2) for d in deps_raw if d.strip().isdigit()]
+
+                    if not nom or not prefixes:
+                        erreurs.append(f"Ligne ignorée : {line}")
+                        continue
+
+                    if nom in [c["nom"] for c in st.session_state.clients] + [n["nom"] for n in nouveaux]:
+                        erreurs.append(f"Doublon ignoré : {nom}")
+                        continue
+
+                    nouveaux.append({"nom": nom, "prefixes": prefixes})
+
+                if nouveaux:
+                    st.session_state.clients.extend(nouveaux)
+                    st.success(f"✅ {len(nouveaux)} client(s) importé(s) avec succès !")
+                if erreurs:
+                    with st.expander(f"⚠️ {len(erreurs)} ligne(s) ignorée(s)"):
+                        for e in erreurs:
+                            st.caption(e)
+                st.rerun()
+
+    with col_rem:
+        if st.button("🗑️ Tout effacer", use_container_width=True):
+            st.session_state.clients = []
+            st.rerun()
+
+with tab2:
+    col1, col2, col3 = st.columns([2, 4, 1])
+    with col1:
+        nouveau_nom = st.text_input("Nom du client", placeholder="Ex : Client_XX")
+    with col2:
+        nouveaux_deps = st.text_input("Départements (séparés par des virgules)", placeholder="Ex : 75, 92, 93, 94")
+    with col3:
+        st.write("")
+        st.write("")
+        ajouter = st.button("➕ Ajouter")
+
+    if ajouter:
+        if not nouveau_nom.strip() or not nouveaux_deps.strip():
+            st.error("❌ Remplis le nom et les départements.")
+        elif nouveau_nom.strip() in [c["nom"] for c in st.session_state.clients]:
+            st.error(f"❌ '{nouveau_nom}' existe déjà.")
+        else:
+            prefixes = [d.strip().zfill(2) for d in nouveaux_deps.split(",") if d.strip()]
+            st.session_state.clients.append({"nom": nouveau_nom.strip(), "prefixes": prefixes})
+            st.success(f"✅ {nouveau_nom} ajouté avec {len(prefixes)} département(s).")
+            st.rerun()
 
 st.divider()
 
